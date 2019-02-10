@@ -1,0 +1,200 @@
+
+Polecam rewelacyjn¹ ksi¹¿kê "Algorytmy genetyczne struktury danych programy ewolucyjne" (Zbigniew Michalewicz), która natchnê³a mnie do napisania TRSeeMe.
+
+G³ówna pêtla klasycznego algorytmu genetycznego wygl¹da w TRSeeMe nastêpuj¹co:
+
+while(GEN_Generation < GEN_MAXGENS){
+      GEN_Generation++;
+      if (GEN_IfPoweredSelection==YES) //jest znane z dialogu
+          GEN_SelectPowered(Population, NewPopulation, GEN_Power);
+        else
+          GEN_SelectRWheel(Population, NewPopulation);
+      GEN_CrossOver(Population);
+      GEN_Mutate(Population);
+      GEN_Evaluate(Population, IfSlowMethod);
+      GEN_Elitist(Population);
+      GEN_Report(streamFile2, GEN_Generation, Population);
+      GEN_XLSRprt(streamFile3, GEN_Generation, Population);
+}
+
+Przy oszacowywaniu funkcji celu wyznaczam dopasowanie w nastêpuj¹cych etapach:
+
+   double sum = 0;
+   int mem;
+   // wyznaczanie ca³kowitego dopasowania populacji
+   for (mem =0; mem < GEN_POPSIZE; mem++)
+     {
+        sum += Population[mem].Fitness;
+     }
+
+   // wyznaczanie dopasowania wzglêdnego = prawdopodobieñstwo selekcji chromosomu mem: ps(mem)
+   for (mem =0; mem < GEN_POPSIZE; mem++)
+     {
+        Population[mem].rFitness = (double)(Population[mem].Fitness)/sum;
+     }
+   Population[0].cFitness = Population[0].rFitness;
+
+   // wyznaczanie dopasowania ³¹cznego => na kole ruletki okreœlane s¹ wycinki ko³a
+   for (mem =1; mem < GEN_POPSIZE; mem++)
+     {
+        Population[mem].cFitness = Population[mem-1].cFitness +Population[mem].rFitness;
+     }
+
+Dziêki takiemu algorytmowi TRSeeMe usyskuje ca³kiem niez³e rezultaty stosuj¹c trzy metody wyznaczania zasiêgu: woln¹ (bez pamiêci co odkry³), szybk¹ (z zapamiêtywaniem historii obliczeñ) i kompromis pomiêdzy nimi!
+
+Teraz nadszed³ czas, ¿eby zastosowaæ algorytm genetyczny w Javie! A czy wiecie, ¿e Java nazywa³a siê OAK (ang. D¥B)?
+
+Repetitio est mater studiorum (Powtarzanie jest matk¹ wiedzy)...
+
+Zacznê jednak od tworzenia najprostszego POJO:
+
+package com.kdabrowski.beanmaster;
+
+public class Person implements java.io.Serializable {
+  protected String firstName;
+  protected String lastName;
+  protected int age;
+
+  public Person() {
+  }
+
+  public String getFirstName() {
+    return firstName;
+  }
+  public void setFirstName(String aFirstName) {
+    firstName = aFirstName;
+  }
+
+  public String getLastName() {
+    return lastName;
+  }
+
+  public void setLastName(String aLastName) {
+    lastName = aLastName;
+  }
+
+  public int getAge() {
+    return age;
+  }
+  public void setAge(int anAge) {
+    age = anAge;
+  }
+}
+
+
+W tym celu zapiszemy w pliku web.xml:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="2.4"
+            xmlns="http://java.sun.com/xml/ns/j2ee"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee
+            http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
+  <servlet>
+        <servlet-name>BrainServlet</servlet-name>
+        <servlet-class> com.kdabrowski.beanmaster.BrainServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BrainServlet</servlet-name>
+        <url-pattern>/BrainServlet</url-pattern>
+    </servlet-mapping>
+    <session-config>
+        <session-timeout>
+            30
+        </session-timeout>
+    </session-config>
+  <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
+  </welcome-file-list>
+</web-app>
+
+
+I napiszemy najprostsz¹ implementacjê servletu HttpServlet:
+
+package com.kdabrowski.beanmaster;
+
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class BrainServlet extends HttpServlet {
+
+            static final long serialVersionUID = 1L;
+           
+    public void doGet(HttpServletRequest request, HttpServletResponse response)
+    throws IOException, ServletException
+    {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+        out.println("<html>");
+        out.println("<head>");
+        out.println("<title>Hello World!</title>");
+        out.println("</head>");
+        out.println("<body>");
+        out.println("<h1>Hello World! This is BrainServlet!</h1>");
+        out.println("</body>");
+        out.println("</html>");
+    }
+}
+
+ G³ówna pêtla mojego klasycznego algorytmu genetycznego mo¿e tutaj wygl¹daæ nastêpuj¹co:
+
+  private runG33Genetics(void){
+    
+        while(g33Generation < g33MAXGENS){
+            g33Generation++;
+            if (g33IfPwrdSlction==YES) //jest znane z dialogu
+                g33SelectPowered(Population, g33NewPopulation, g33Power);
+            else
+                g33SelectRWheel(Population, g33NewPopulation);
+            g33CrossOver(Population);
+            g33Mutate(Population);
+            g33Evaluate(Population, IfSlowMethod);
+            g33Elitist(Population);
+            g33Report(streamFile2, g33Generation, g33Population);
+            g33XLSRprt(streamFile3, g33Generation, g33Population);
+
+        }
+    }    
+
+Natomiast wybór najlepszego osobnika zaczynam nastêpuj¹co:
+
+private g33Elitist(G33Genotype[] g33Population)
+{
+   int i;
+   double best, worst; // najlepsza i najgorsza wartoœæ dopasowania
+   int best_mem, worst_mem; // wsk. najlepszego i najgorszego osobnika
+
+   best = g33Population[0].dFitness;
+   worst = g33Population[0].dFitness;
+   for (i=0; i < g33POPSIZE-1; i++)
+     {
+       if (g33Population[i].dFitness > g33Population[i+1].dFitness)
+         {
+           if (g33Population[i].dFitness >= best)
+             {
+               best = g33Population[i].dFitness;
+               best_mem = i;
+             }
+           if (g33Population[i+1].dFitness <= worst)
+             {
+               worst = g33Population[i+1].dFitness;
+               worst_mem = i+1;
+             }
+         }
+         else
+         {
+           if (g33Population[i].dFitness <= worst)
+             {
+               worst = g33Population[i].dFitness;
+               worst_mem = i;
+             }
+           if (g33Population[i+1].dFitness >= best)
+             {
+               best = g33Population[i+1].dFitness;
+               best_mem = i+1;
+             }
+         }
+     }
+
+(...)
