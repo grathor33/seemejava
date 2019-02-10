@@ -17,6 +17,7 @@ while(GEN_Generation < GEN_MAXGENS){
       GEN_XLSRprt(streamFile3, GEN_Generation, Population);
 }
 
+
 Przy oszacowywaniu funkcji celu wyznaczam dopasowanie w nastêpuj¹cych etapach:
 
    double sum = 0;
